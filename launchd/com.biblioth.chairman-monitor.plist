@@ -7,7 +7,7 @@
   <key>ProgramArguments</key>
   <array>
     <string>/usr/local/bin/node</string>
-    <string>/Users/spicyao/Downloads/Chairman Monitor/scripts/run-browser-probe.mjs</string>
+    <string>/Users/spicyao/Library/Application Support/Chairman Monitor Runtime/scripts/run-browser-probe.mjs</string>
   </array>
   <key>StartInterval</key>
   <integer>300</integer>

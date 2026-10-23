@@ -43,9 +43,15 @@ npm run check
 
 ## Human verification recovery
 
-The scheduled probe uses a dedicated Chrome profile at
-`~/Library/Application Support/Chairman Monitor Chrome`. When AWS WAF challenges that profile,
-open the official booking flow once with that profile, complete the CAPTCHA manually, then close
-the dedicated window. `launchd/com.biblioth.chairman-monitor.plist` runs the verified profile every
-five minutes and relays the result through GitHub Actions to the Worker.
+The scheduled probe uses a visible, off-screen Chrome session with a dedicated profile at
+`~/Library/Application Support/Chairman Monitor Chrome`. AWS WAF blocks headless and datacenter
+browsers, so the monitor keeps this separate debugging session and one booking tab alive, then
+refreshes that tab on schedule. When AWS WAF challenges the profile, bring that dedicated Chrome window
+on screen once and complete the CAPTCHA manually. `launchd/com.biblioth.chairman-monitor.plist`
+reads the verified session every five minutes and relays the result through GitHub Actions to the
+Worker.
+
+For macOS privacy isolation, the LaunchAgent executes a runtime copy installed under
+`~/Library/Application Support/Chairman Monitor Runtime`; the Git repository remains independent
+under `~/Downloads/Chairman Monitor`.
 
