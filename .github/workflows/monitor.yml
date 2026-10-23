@@ -22,8 +22,8 @@ jobs:
       CHAIRMAN_PARTY_SIZE: "2"
       CHAIRMAN_FETCH_TIMEOUT_MS: "45000"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: "24"
       - name: Fetch the official booking page and commit the result

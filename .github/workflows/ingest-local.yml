@@ -24,8 +24,8 @@ jobs:
       CHAIRMAN_ADMIN_TOKEN: ${{ secrets.CHAIRMAN_ADMIN_TOKEN }}
       CHAIRMAN_PAYLOAD_B64: ${{ inputs.payload }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: "24"
       - run: node scripts/ingest-payload.mjs
