@@ -1,0 +1,41 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "chairman-monitor",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-23",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "observability": {
+    "enabled": true
+  },
+  "triggers": { "crons": ["* * * * *"] },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "chairman-monitor",
+      "database_id": "db5e59f3-0cbc-4a6e-836c-bb543a9e63e6"
+    }
+  ],
+  "queues": {
+    "producers": [
+      { "binding": "NOTIFICATION_QUEUE", "queue": "chairman-notifications" }
+    ],
+    "consumers": [
+      {
+        "queue": "chairman-notifications",
+        "max_batch_size": 1,
+        "max_batch_timeout": 1,
+        "max_retries": 8,
+        "dead_letter_queue": "chairman-notifications-dlq"
+      }
+    ]
+  },
+  "vars": {
+    "TARGET_DATES": "2026-10-30,2026-10-31,2026-11-01",
+    "PARTY_SIZE": "2",
+    "MEAL_WINDOWS": "lunch,dinner",
+    "FAILURE_ALERT_THRESHOLD": "3",
+    "STALE_AFTER_MINUTES": "15",
+    "PUSHPLUS_CHANNELS": "wechat,clawbot"
+  }
+}

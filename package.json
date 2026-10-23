@@ -1,0 +1,14 @@
+{
+  "name": "chairman-monitor-worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "check": "WRANGLER_LOG_PATH=/tmp/chairman-wrangler.log wrangler deploy --dry-run",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "4.132.0"
+  }
+}

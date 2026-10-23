@@ -1,0 +1,33 @@
+name: Monitor The Chairman availability
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: chairman-monitor
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    env:
+      CHAIRMAN_INGEST_URL: https://chairman-monitor.spicyao-lakewatch.workers.dev/ingest
+      CHAIRMAN_ADMIN_TOKEN: ${{ secrets.CHAIRMAN_ADMIN_TOKEN }}
+      CHAIRMAN_TARGET_DATES: 2026-10-30,2026-10-31,2026-11-01
+      CHAIRMAN_MEAL_WINDOWS: lunch,dinner
+      CHAIRMAN_PARTY_SIZE: "2"
+      CHAIRMAN_FETCH_TIMEOUT_MS: "45000"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Fetch the official booking page and commit the result
+        run: node scripts/run-probe.mjs
+
