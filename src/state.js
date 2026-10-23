@@ -100,6 +100,7 @@ export async function recordProbe(env, probeId, outcome, observedAt = new Date()
 }
 
 export async function ensureFreshnessEvent(env, now = new Date()) {
+  if (String(env.PAUSED || "").toLowerCase() === "true") return null;
   const stopTime = Date.parse(String(env.STOP_AT || ""));
   if (Number.isFinite(stopTime) && now.getTime() >= stopTime) return null;
   const state = await getState(env.DB);

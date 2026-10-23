@@ -11,10 +11,16 @@ function validOutcome(value) {
 }
 
 export function monitoringWindow(env, now = new Date()) {
+  const paused = String(env.PAUSED || "").toLowerCase() === "true";
   const stopsAt = String(env.STOP_AT || "").trim();
   const stopTime = Date.parse(stopsAt);
-  const active = !Number.isFinite(stopTime) || now.getTime() < stopTime;
-  return { active, stopsAt: Number.isFinite(stopTime) ? new Date(stopTime).toISOString() : null };
+  const expired = Number.isFinite(stopTime) && now.getTime() >= stopTime;
+  return {
+    active: !paused && !expired,
+    paused,
+    expired,
+    stopsAt: Number.isFinite(stopTime) ? new Date(stopTime).toISOString() : null,
+  };
 }
 
 async function enqueuePending(env) {

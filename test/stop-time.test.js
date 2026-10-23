@@ -12,10 +12,25 @@ test("monitor remains active until 16:00 Beijing time on November 1", () => {
   assert.equal(monitoringWindow(env, new Date("2026-11-01T08:00:00.000Z")).stopsAt, "2026-11-01T08:00:00.000Z");
 });
 
+test("monitor is inactive while explicitly paused", () => {
+  const result = monitoringWindow({ ...env, PAUSED: "true" }, new Date("2026-10-23T08:30:00.000Z"));
+  assert.equal(result.active, false);
+  assert.equal(result.paused, true);
+  assert.equal(result.expired, false);
+});
+
 test("freshness sweep exits before touching storage after stop time", async () => {
   const result = await ensureFreshnessEvent({
     STOP_AT: env.STOP_AT,
     get DB() { throw new Error("DB should not be read after the stop time"); },
   }, new Date("2026-11-01T08:00:00.000Z"));
+  assert.equal(result, null);
+});
+
+test("freshness sweep exits before touching storage while paused", async () => {
+  const result = await ensureFreshnessEvent({
+    PAUSED: "true",
+    get DB() { throw new Error("DB should not be read while paused"); },
+  }, new Date("2026-10-23T08:30:00.000Z"));
   assert.equal(result, null);
 });

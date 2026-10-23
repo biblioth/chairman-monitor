@@ -36,6 +36,7 @@
     "MEAL_WINDOWS": "lunch,dinner",
     "FAILURE_ALERT_THRESHOLD": "3",
     "STALE_AFTER_MINUTES": "15",
+    "PAUSED": "true",
     "STOP_AT": "2026-11-01T08:00:00.000Z",
     "PUSHPLUS_CHANNELS": "wechat,clawbot"
   }

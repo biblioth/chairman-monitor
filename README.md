@@ -62,3 +62,6 @@ The monitor stops at `2026-11-01 16:00 Asia/Shanghai` (`2026-11-01T08:00:00Z`). 
 local probe disables and unloads its LaunchAgent and closes only the dedicated Chairman Chrome
 session. The Worker also stops freshness alerts and reports the monitor as inactive.
 
+The monitor can be paused before that deadline by disabling the LaunchAgent and setting the Worker
+variable `PAUSED` to `true`. A paused Worker suppresses freshness alerts while preserving all state.
+
