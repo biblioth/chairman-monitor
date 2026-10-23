@@ -1,15 +1,13 @@
 name: Monitor The Chairman availability
 
 on:
-  schedule:
-    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: chairman-monitor
+  group: chairman-monitor-diagnostic
   cancel-in-progress: true
 
 jobs:

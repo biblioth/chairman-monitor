@@ -1,0 +1,31 @@
+name: Ingest local Chairman browser probe
+
+on:
+  workflow_dispatch:
+    inputs:
+      payload:
+        description: Base64url-encoded probe result
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: chairman-local-ingestion
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    env:
+      CHAIRMAN_INGEST_URL: https://chairman-monitor.spicyao-lakewatch.workers.dev/ingest
+      CHAIRMAN_ADMIN_TOKEN: ${{ secrets.CHAIRMAN_ADMIN_TOKEN }}
+      CHAIRMAN_PAYLOAD_B64: ${{ inputs.payload }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - run: node scripts/ingest-payload.mjs

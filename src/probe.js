@@ -317,9 +317,6 @@ export async function fetchChairmanAvailability(env, fetcher = fetch) {
     pageTitle,
     pageBytes: new TextEncoder().encode(html).length,
     pageFingerprint: pageFingerprint(html),
-    pagePreview: response.status === 405
-      ? html.replace(/\s+/g, " ").slice(0, 3000)
-      : null,
   };
   if (isBrowserTabReloadPage(pageTitle, html)) {
     return {
