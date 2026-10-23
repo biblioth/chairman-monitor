@@ -4,7 +4,7 @@ const DEFAULT_QUEUE_URL =
 const DEFAULT_BOOKING_URL = "https://www.thechairmangroup.com/index.php?route=catering/booking";
 const USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
-  "(KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 ChairmanMonitor/1.0";
+  "(KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36";
 
 function integer(value, fallback) {
   const parsed = Number.parseInt(String(value ?? ""), 10);
@@ -94,9 +94,17 @@ function fetchOptions(timeoutMs, extraHeaders = {}) {
     redirect: "manual",
     headers: {
       "user-agent": USER_AGENT,
-      accept: "text/html,application/xhtml+xml",
+      accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
       "accept-language": "zh-HK,zh;q=0.9,en;q=0.8",
       "cache-control": "no-cache",
+      "sec-ch-ua": '"Chromium";v="140", "Not=A?Brand";v="24"',
+      "sec-ch-ua-mobile": "?0",
+      "sec-ch-ua-platform": '"macOS"',
+      "sec-fetch-dest": "document",
+      "sec-fetch-mode": "navigate",
+      "sec-fetch-site": "none",
+      "sec-fetch-user": "?1",
+      "upgrade-insecure-requests": "1",
       ...extraHeaders,
     },
     signal: AbortSignal.timeout(timeoutMs),
@@ -309,6 +317,9 @@ export async function fetchChairmanAvailability(env, fetcher = fetch) {
     pageTitle,
     pageBytes: new TextEncoder().encode(html).length,
     pageFingerprint: pageFingerprint(html),
+    pagePreview: response.status === 405
+      ? html.replace(/\s+/g, " ").slice(0, 3000)
+      : null,
   };
   if (isBrowserTabReloadPage(pageTitle, html)) {
     return {

@@ -48,6 +48,7 @@ console.log(JSON.stringify({
   httpStatus: outcome.httpStatus || null,
   pageTitle: outcome.pageTitle || null,
   pageBytes: outcome.pageBytes || null,
+  pagePreview: outcome.pagePreview || null,
   available: (outcome.available || []).map((slot) => slot.key),
   worker: JSON.parse(responseText),
 }, null, 2));
