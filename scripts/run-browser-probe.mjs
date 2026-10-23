@@ -36,6 +36,10 @@ async function ensureChrome() {
     "--remote-allow-origins=http://127.0.0.1:9223",
     "--window-position=-10000,-10000",
     "--window-size=800,600",
+    "--disable-backgrounding-occluded-windows",
+    "--disable-background-timer-throttling",
+    "--disable-renderer-backgrounding",
+    "--disable-features=CalculateNativeWinOcclusion",
     "--no-first-run",
     "--no-default-browser-check",
     "--new-window",
@@ -107,6 +111,13 @@ async function inspectTarget(target, { newlyCreated = false } = {}) {
 
   await delay(newlyCreated ? 6_000 : 1_000);
   let page = await readPage();
+  if (/human verification|request could not be satisfied/i.test(page.title || "")) {
+    for (let attempt = 0; attempt < 30; attempt += 1) {
+      await delay(1_000);
+      page = await readPage();
+      if (!/human verification|request could not be satisfied/i.test(page.title || "")) break;
+    }
+  }
   if (/human verification|request could not be satisfied/i.test(page.title || "")) {
     await command("Runtime.evaluate", {
       expression: `sessionStorage.removeItem("chairman-monitor-last-parsed")`,
