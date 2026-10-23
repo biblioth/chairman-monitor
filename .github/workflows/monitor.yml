@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   probe:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     timeout-minutes: 4
     env:
       CHAIRMAN_INGEST_URL: https://chairman-monitor.spicyao-lakewatch.workers.dev/ingest
