@@ -298,3 +298,59 @@ export function parseChairmanAvailability(
   };
 }
 
+export function parseChairmanReloadResponse(
+  response,
+  {
+    targetDates = ["2026-10-30", "2026-10-31", "2026-11-01"],
+    mealWindows = ["lunch", "dinner"],
+    partySize = 2,
+    sourceUrl = "https://thechairmangroup.queue-it.net/?c=thechairmangroup&e=chairmanwaitingrmsys",
+  } = {},
+) {
+  if (!response || typeof response !== "object" || Array.isArray(response)) {
+    throw new ChairmanParseError("Chairman reload endpoint returned an invalid payload");
+  }
+
+  if (typeof response.error === "string" && response.error.trim()) {
+    return parseChairmanAvailability(`
+      <html><body>
+        <h1>The Chairman Reservation</h1>
+        <div class="message-warning">${response.error}</div>
+      </body></html>
+    `, { targetDates, mealWindows, partySize, sourceUrl });
+  }
+
+  if (!Array.isArray(response.calendar)) {
+    throw new ChairmanParseError("Chairman reload endpoint omitted both error and calendar data");
+  }
+
+  const normalizedWindows = [...new Set(mealWindows.map((value) => String(value).toLowerCase()))];
+  const calendar = new Set(response.calendar.map((value) => String(value).slice(0, 10)));
+  const observations = targetDates.flatMap((date) => normalizedWindows.map((mealWindow) => {
+    const available = calendar.has(date);
+    return {
+      key: `${date}:${mealWindow}`,
+      date,
+      mealWindow,
+      status: available ? "available" : "unavailable",
+      times: [],
+      dateLevel: true,
+      bookingUrl: sourceUrl,
+      evidence: available
+        ? "The official booking reload endpoint lists this date as bookable; confirm the meal time for 2 people on the booking page"
+        : "The official booking reload endpoint does not list this date as bookable",
+    };
+  }));
+  const available = observations.filter((observation) => observation.status === "available");
+  return {
+    status: available.length ? "available" : "unavailable",
+    partySize: Number(partySize),
+    targetDates,
+    mealWindows: normalizedWindows,
+    observations,
+    available,
+    unknown: [],
+    sourceUrl,
+  };
+}
+

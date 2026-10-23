@@ -1,7 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { ChairmanParseError, parseChairmanAvailability } from "../src/parser.js";
+import {
+  ChairmanParseError,
+  parseChairmanAvailability,
+  parseChairmanReloadResponse,
+} from "../src/parser.js";
 
 const options = {
   targetDates: ["2026-10-30", "2026-10-31", "2026-11-01"],
@@ -72,5 +76,32 @@ test("a booking-page notice covering the target dates marks every meal unavailab
   assert.equal(result.unknown.length, 0);
   assert.equal(result.observations.length, 6);
   assert.ok(result.observations.every((item) => item.status === "unavailable"));
+});
+
+test("reload endpoint fully-booked notice marks every target meal unavailable", () => {
+  const result = parseChairmanReloadResponse({
+    error: "The Chairman Restaurant is fully booked until the end of December 2026.",
+  }, options);
+
+  assert.equal(result.status, "unavailable");
+  assert.equal(result.observations.length, 6);
+  assert.ok(result.observations.every((item) => item.status === "unavailable"));
+});
+
+test("reload endpoint calendar exposes date-level cancellations", () => {
+  const result = parseChairmanReloadResponse({
+    calendar: ["2026-10-30", "2026-11-07"],
+  }, options);
+
+  assert.equal(result.status, "available");
+  assert.deepEqual(result.available.map((item) => item.key), [
+    "2026-10-30:lunch",
+    "2026-10-30:dinner",
+  ]);
+  assert.ok(result.available.every((item) => item.dateLevel));
+});
+
+test("reload endpoint fails closed for an unexpected payload", () => {
+  assert.throws(() => parseChairmanReloadResponse({ redirect: "/booking" }, options), ChairmanParseError);
 });
 

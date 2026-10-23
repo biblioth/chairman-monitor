@@ -3,7 +3,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 
-import { parseChairmanAvailability } from "../src/parser.js";
+import { parseChairmanReloadResponse } from "../src/parser.js";
 
 const exec = promisify(execFile);
 const queueUrl = "https://thechairmangroup.queue-it.net/?c=thechairmangroup&e=chairmanwaitingrmsys";
@@ -101,8 +101,7 @@ async function inspectTarget(target, { newlyCreated = false } = {}) {
       expression: `JSON.stringify({
         title: document.title,
         url: location.href,
-        html: document.documentElement?.outerHTML || "",
-        lastParsedAt: sessionStorage.getItem("chairman-monitor-last-parsed")
+        html: document.documentElement?.outerHTML || ""
       })`,
       returnByValue: true,
     });
@@ -119,17 +118,8 @@ async function inspectTarget(target, { newlyCreated = false } = {}) {
     }
   }
   if (/human verification|request could not be satisfied/i.test(page.title || "")) {
-    await command("Runtime.evaluate", {
-      expression: `sessionStorage.removeItem("chairman-monitor-last-parsed")`,
-    });
     socket.close();
     return page;
-  }
-
-  const lastParsedAt = Date.parse(page.lastParsedAt || "");
-  if (!newlyCreated && Number.isFinite(lastParsedAt) && Date.now() - lastParsedAt >= 240_000) {
-    await command("Page.reload", { ignoreCache: false });
-    await delay(6_000);
   }
 
   for (let attempt = 0; attempt < 20; attempt += 1) {
@@ -140,9 +130,24 @@ async function inspectTarget(target, { newlyCreated = false } = {}) {
   }
 
   if (/the chairman reservation/i.test(page.title || "")) {
-    await command("Runtime.evaluate", {
-      expression: `sessionStorage.setItem("chairman-monitor-last-parsed", ${JSON.stringify(new Date().toISOString())})`,
+    const result = await command("Runtime.evaluate", {
+      expression: `(async () => {
+        const endpoint = new URL("/index.php?route=catering/booking/reload", location.origin);
+        const tabId = sessionStorage.getItem("btabid");
+        if (tabId) endpoint.searchParams.set("btabid", tabId);
+        endpoint.searchParams.set("guests", ${JSON.stringify(partySize)});
+        const response = await fetch(endpoint, { credentials: "include" });
+        return JSON.stringify({
+          status: response.status,
+          url: response.url,
+          contentType: response.headers.get("content-type"),
+          text: await response.text()
+        });
+      })()`,
+      awaitPromise: true,
+      returnByValue: true,
     });
+    page.reloadProbe = JSON.parse(result.result.value);
   }
   socket.close();
   return page;
@@ -173,8 +178,17 @@ try {
       sourceUrl: page?.url || queueUrl,
     };
   } else {
+    if (!page.reloadProbe || page.reloadProbe.status !== 200) {
+      throw new Error(`Chairman reload endpoint returned HTTP ${page.reloadProbe?.status || "unknown"}`);
+    }
+    let reloadPayload;
+    try {
+      reloadPayload = JSON.parse(page.reloadProbe.text);
+    } catch {
+      throw new Error("Chairman reload endpoint returned invalid JSON");
+    }
     outcome = {
-      ...parseChairmanAvailability(page?.html || "", {
+      ...parseChairmanReloadResponse(reloadPayload, {
         targetDates,
         mealWindows,
         partySize,

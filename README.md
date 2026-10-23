@@ -45,11 +45,12 @@ npm run check
 
 The scheduled probe uses a visible, off-screen Chrome session with a dedicated profile at
 `~/Library/Application Support/Chairman Monitor Chrome`. AWS WAF blocks headless and datacenter
-browsers, so the monitor keeps this separate debugging session and one booking tab alive, then
-refreshes that tab on schedule. When AWS WAF challenges the profile, bring that dedicated Chrome window
-on screen once and complete the CAPTCHA manually. `launchd/com.biblioth.chairman-monitor.plist`
-reads the verified session every five minutes and relays the result through GitHub Actions to the
-Worker.
+browsers, so the monitor keeps this separate debugging session and one booking tab alive. Scheduled
+checks call the booking page's own `catering/booking/reload` JSON endpoint inside that verified tab;
+they do not reload the document and therefore do not normally restart the CAPTCHA flow. When AWS WAF
+eventually challenges a restarted or expired profile, bring that dedicated Chrome window on screen
+once and complete the CAPTCHA manually. `launchd/com.biblioth.chairman-monitor.plist` reads the
+verified session every five minutes and relays the result through GitHub Actions to the Worker.
 
 For macOS privacy isolation, the LaunchAgent executes a runtime copy installed under
 `~/Library/Application Support/Chairman Monitor Runtime`; the Git repository remains independent
