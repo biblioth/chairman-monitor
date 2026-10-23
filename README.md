@@ -56,3 +56,9 @@ For macOS privacy isolation, the LaunchAgent executes a runtime copy installed u
 `~/Library/Application Support/Chairman Monitor Runtime`; the Git repository remains independent
 under `~/Downloads/Chairman Monitor`.
 
+## Stop time
+
+The monitor stops at `2026-11-01 16:00 Asia/Shanghai` (`2026-11-01T08:00:00Z`). At that time the
+local probe disables and unloads its LaunchAgent and closes only the dedicated Chairman Chrome
+session. The Worker also stops freshness alerts and reports the monitor as inactive.
+

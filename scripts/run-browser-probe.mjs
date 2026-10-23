@@ -1,4 +1,4 @@
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -14,8 +14,44 @@ const gh = process.env.CHAIRMAN_GH_PATH || "/opt/homebrew/bin/gh";
 const targetDates = (process.env.CHAIRMAN_TARGET_DATES || "2026-10-30,2026-10-31,2026-11-01").split(",");
 const mealWindows = (process.env.CHAIRMAN_MEAL_WINDOWS || "lunch,dinner").split(",");
 const partySize = Number(process.env.CHAIRMAN_PARTY_SIZE || 2);
+const stopAt = Date.parse(process.env.CHAIRMAN_STOP_AT || "2026-11-01T08:00:00.000Z");
+const launchdLabel = "com.biblioth.chairman-monitor";
 
 const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+async function closeDedicatedChrome() {
+  try {
+    const version = await (await fetch(`${cdpOrigin}/json/version`, {
+      signal: AbortSignal.timeout(1_500),
+    })).json();
+    const socket = new WebSocket(version.webSocketDebuggerUrl);
+    await new Promise((resolve, reject) => {
+      socket.addEventListener("open", resolve, { once: true });
+      socket.addEventListener("error", reject, { once: true });
+    });
+    socket.send(JSON.stringify({ id: 1, method: "Browser.close" }));
+    await delay(500);
+    socket.close();
+  } catch {
+    // The dedicated browser is already closed or unreachable.
+  }
+}
+
+async function stopExpiredMonitor(now = Date.now()) {
+  if (!Number.isFinite(stopAt) || now < stopAt) return false;
+  await closeDedicatedChrome();
+  const service = `gui/${process.getuid()}/${launchdLabel}`;
+  await exec("/bin/launchctl", ["disable", service]).catch(() => {});
+  const child = spawn("/bin/launchctl", ["bootout", service], {
+    detached: true,
+    stdio: "ignore",
+  });
+  child.unref();
+  console.log(JSON.stringify({ stopped: true, stopsAt: new Date(stopAt).toISOString() }));
+  return true;
+}
+
+if (await stopExpiredMonitor()) process.exit(0);
 
 async function chromeReady() {
   try {

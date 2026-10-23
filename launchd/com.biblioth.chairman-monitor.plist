@@ -11,6 +11,17 @@
   </array>
   <key>StartInterval</key>
   <integer>300</integer>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Month</key>
+    <integer>11</integer>
+    <key>Day</key>
+    <integer>1</integer>
+    <key>Hour</key>
+    <integer>16</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
   <key>RunAtLoad</key>
   <true/>
   <key>StandardOutPath</key>
@@ -19,6 +30,8 @@
   <string>/Users/spicyao/Library/Logs/chairman-monitor.err.log</string>
   <key>EnvironmentVariables</key>
   <dict>
+    <key>CHAIRMAN_STOP_AT</key>
+    <string>2026-11-01T08:00:00.000Z</string>
     <key>PATH</key>
     <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
   </dict>

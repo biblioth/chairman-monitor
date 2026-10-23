@@ -10,6 +10,13 @@ function validOutcome(value) {
     && Array.isArray(value.observations || []) && Array.isArray(value.available || []);
 }
 
+export function monitoringWindow(env, now = new Date()) {
+  const stopsAt = String(env.STOP_AT || "").trim();
+  const stopTime = Date.parse(stopsAt);
+  const active = !Number.isFinite(stopTime) || now.getTime() < stopTime;
+  return { active, stopsAt: Number.isFinite(stopTime) ? new Date(stopTime).toISOString() : null };
+}
+
 async function enqueuePending(env) {
   const now = new Date().toISOString();
   const staleBefore = new Date(Date.now() - 30 * 60_000).toISOString();
@@ -24,9 +31,11 @@ async function enqueuePending(env) {
 
 async function health(env) {
   const state = await getState(env.DB);
+  const monitor = monitoringWindow(env);
   const ageMs = state?.last_checked_at ? Date.now() - new Date(state.last_checked_at).getTime() : null;
-  const ok = Number.isFinite(ageMs) && ageMs < Number(env.STALE_AFTER_MINUTES || 15) * 60_000
+  const sourceOk = Number.isFinite(ageMs) && ageMs < Number(env.STALE_AFTER_MINUTES || 15) * 60_000
     && !["error", "unknown", "stale"].includes(state?.source_status);
+  const ok = !monitor.active || sourceOk;
   return Response.json({
     ok,
     architecture: "GitHub probe -> Cloudflare Worker -> D1/Queue -> Feishu + PushPlus",
@@ -37,7 +46,8 @@ async function health(env) {
       bookingUrl: state.booking_url, lastSuccessAt: state.last_success_at, lastCheckedAt: state.last_checked_at,
       consecutiveFailures: state.consecutive_failures, lastError: state.last_error,
     } : null,
-    scheduler: { ok: Number.isFinite(ageMs) && ageMs < Number(env.STALE_AFTER_MINUTES || 15) * 60_000, ageMs },
+    monitor,
+    scheduler: { ok: !monitor.active || (Number.isFinite(ageMs) && ageMs < Number(env.STALE_AFTER_MINUTES || 15) * 60_000), ageMs },
     channels: configuredChannels(env),
   }, { status: ok ? 200 : 503 });
 }
@@ -64,6 +74,8 @@ export default {
     if (request.method === "GET" && url.pathname === "/health") return health(env);
     if (request.method === "POST" && url.pathname === "/ingest") {
       if (!authorized(request, env)) return new Response("Unauthorized", { status: 401 });
+      const monitor = monitoringWindow(env);
+      if (!monitor.active) return Response.json({ stopped: true, stopsAt: monitor.stopsAt }, { status: 410 });
       let body;
       try { body = await request.json(); } catch { return new Response("Invalid JSON", { status: 400 }); }
       if (!body?.probeId || !validOutcome(body.outcome)) return new Response("Invalid probe result", { status: 400 });
@@ -72,12 +84,14 @@ export default {
     }
     if (request.method === "POST" && url.pathname === "/sweep") {
       if (!authorized(request, env)) return new Response("Unauthorized", { status: 401 });
+      const monitor = monitoringWindow(env);
+      if (!monitor.active) return Response.json({ stopped: true, stopsAt: monitor.stopsAt });
       return Response.json({ freshnessEventId: await ensureFreshnessEvent(env), queued: await enqueuePending(env) });
     }
     return new Response("Not found", { status: 404 });
   },
   async scheduled(_controller, env) {
-    await ensureFreshnessEvent(env);
+    if (monitoringWindow(env).active) await ensureFreshnessEvent(env);
     await enqueuePending(env);
   },
   async queue(batch, env) { await processQueue(batch, env); },
